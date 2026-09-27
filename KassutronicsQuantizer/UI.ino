@@ -55,11 +55,11 @@ unsigned int getDisplayState(boolean shift) {
   static unsigned int counter = 0;
   counter--;
 
-  // Startup animation: light each note LED in turn (key 0 to 11), 500ms each
+  // Startup animation: light each note LED in turn (key 0 to 11), ~167ms each, ~2s total
   static unsigned int startupcounter = 0;
-  if (startupcounter < 12 * 500) {
+  if (startupcounter < 12 * 167) {
     startupcounter++;
-    return 0x8000 >> ((startupcounter - 1) / 500);
+    return 0x8000 >> ((startupcounter - 1) / 167);
   }
 
   // Keep track of autosavecounter

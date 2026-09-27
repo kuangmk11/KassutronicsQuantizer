@@ -1,4 +1,5 @@
 /* hardware.h
+ * Modified 2026-09-27: no functional changes in this file
  * This file contains hardware pinout definitions as well as 
  * some macros to access I/O pins and general purpose macros 
  */
@@ -102,4 +103,3 @@ int intmap(int x, int in_min, int in_max, int out_min, int out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
- * Modified 2026-09-27: no functional changes in this file

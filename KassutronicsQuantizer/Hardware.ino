@@ -1,4 +1,5 @@
 /* Hardware.ino
+ * Modified 2026-09-27: no functional changes in this file
  *  This code does all the lower level hardware-related stuff, such as
  *  - Setting up registers at start up
  *  - Interrupt routines for the ADC and the UI timer
@@ -353,4 +354,3 @@ ISR(ADC_vect){
 
   DEBUG_OFF(0);
 }
- * Modified 2026-09-27: no functional changes in this file

@@ -1,4 +1,5 @@
 /* Quantize.ino - Quantization algorithms
+ * Modified 2026-09-27: no functional changes in this file
  *  
  *  This file contains several quantization algorithms, corresponding to the 
  *  different quantization modes. Each function takes in a measured voltage in 
@@ -192,4 +193,3 @@ byte quantizeEqual(int adcval) {
   return(noteoffset + notes[index]);
 }
 
- * Modified 2026-09-27: no functional changes in this file

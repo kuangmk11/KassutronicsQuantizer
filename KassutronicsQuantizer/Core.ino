@@ -1,5 +1,5 @@
 /* Core.ino - I/O processing etc
- * Modified 2026-09-27: CV gate length around menu setting, note flash, startup animation
+ * Modified 2026-09-27: CV gate length now offsets the menu setting, note flash state
  *  
  * This file mainly contains the processChannel and processCV functions,
  * which process the ADC data for the channel inputs and CV inputs, respectively,
@@ -181,7 +181,7 @@ void processChannel(byte i, int newadcval) {
       candidate = quantizeEqual(newvalhystoffset);
     }
     // Capture pre-transpose note for LED flash
-    // candidate is in semitones, use +8 offset to match scale index (same as Quantize.ino line 34)
+    // candidate is in semitones, use +8 offset to match scale index (same as scalenote in quantizeNearest)
     // Skip invalid candidates (e.g. 255), which would overrun mod12table
     scaleNote = (candidate < 128) ? mod12(candidate + 8) : 255;
 

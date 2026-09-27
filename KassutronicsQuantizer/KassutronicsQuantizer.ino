@@ -1,4 +1,4 @@
-// Modified 2026-09-27: CV gate length around menu setting, note flash, startup animation
+// Modified 2026-09-27 (fork): CV gate length, note flash, startup animation. See Core.ino/UI.ino
 
 // **** Debug functionality ****
 /* SLOW slows down the ADC by a factor 2, giving more time for core processing. */

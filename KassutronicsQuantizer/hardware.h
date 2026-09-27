@@ -102,4 +102,4 @@ int intmap(int x, int in_min, int in_max, int out_min, int out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
- * Modified 2026-09-27: CV gate length around menu setting, note flash, startup animation
+ * Modified 2026-09-27: no functional changes in this file

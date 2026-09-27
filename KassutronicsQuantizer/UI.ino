@@ -1,5 +1,5 @@
 /* UI.ino - Interface/menu structure
- * Modified 2026-09-27: CV gate length around menu setting, note flash, startup animation
+ * Modified 2026-09-27: note flash on the scale display, startup LED animation
  *  
  * This file handles the user interface at high level. 
  * In particular, it dynamically calculates what LEDs 
@@ -98,7 +98,7 @@ unsigned int getDisplayState(boolean shift) {
         byte note1 = (flashcounter[1] > 0) ? flashnote[1] : 255;
         sei();
 
-        // Flash: the played note is always lit (it's in the scale), so turn it off for the flash duration
+        // Flash: turn the played note's LED off for the flash duration (it is normally lit, since quantized notes are in the scale)
         unsigned int flashmask = 0;
         if (note0 < 12) flashmask |= (0x8000 >> note0);
         if (note1 < 12) flashmask |= (0x8000 >> note1);

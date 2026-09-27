@@ -1,4 +1,5 @@
 /* SaveRecall.ino - EEPROM stuff
+ * Modified 2026-09-27: CV gate length around menu setting, note flash, startup animation
  * 
  * EEPROM memory map (memory size 1k = 0x400 bytes)
  * 0x000 - 0x00F  Identifier block

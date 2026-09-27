@@ -1,3 +1,5 @@
+// Modified 2026-09-27: CV gate length around menu setting, note flash, startup animation
+
 // **** Debug functionality ****
 /* SLOW slows down the ADC by a factor 2, giving more time for core processing. */
 //#define SLOW

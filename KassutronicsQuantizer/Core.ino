@@ -1,4 +1,5 @@
 /* Core.ino - I/O processing etc
+ * Modified 2026-09-27: CV gate length around menu setting, note flash, startup animation
  *  
  * This file mainly contains the processChannel and processCV functions,
  * which process the ADC data for the channel inputs and CV inputs, respectively,

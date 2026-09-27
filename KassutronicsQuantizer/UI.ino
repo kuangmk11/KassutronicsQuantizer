@@ -1,4 +1,5 @@
 /* UI.ino - Interface/menu structure
+ * Modified 2026-09-27: CV gate length around menu setting, note flash, startup animation
  *  
  * This file handles the user interface at high level. 
  * In particular, it dynamically calculates what LEDs 
@@ -53,6 +54,13 @@ unsigned int getDisplayState(boolean shift) {
   // A counter to keep track of blink states
   static unsigned int counter = 0;
   counter--;
+
+  // Startup animation: light each note LED in turn (key 0 to 11), 500ms each
+  static unsigned int startupcounter = 0;
+  if (startupcounter < 12 * 500) {
+    startupcounter++;
+    return 0x8000 >> ((startupcounter - 1) / 500);
+  }
 
   // Keep track of autosavecounter
   if (autosavecounter > 1) {

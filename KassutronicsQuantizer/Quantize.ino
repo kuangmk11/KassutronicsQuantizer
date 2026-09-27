@@ -192,3 +192,4 @@ byte quantizeEqual(int adcval) {
   return(noteoffset + notes[index]);
 }
 
+ * Modified 2026-09-27: CV gate length around menu setting, note flash, startup animation

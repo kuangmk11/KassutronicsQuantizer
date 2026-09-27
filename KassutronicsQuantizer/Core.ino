@@ -79,10 +79,16 @@ volatile byte rotatesemitonesCV = 0;
 volatile signed char transposesemitonesCV[2] = {0,0};
 volatile signed char offsetsemitonesCV[2] = {0,0};
 volatile int gatelength;
-volatile int cvgatelengthindex; 
+volatile int cvgatelengthindex;
 volatile int cvgatelengthremainder;
 
+// Flash feedback state (for LED visual feedback on quantization)
+volatile byte flashcounter[2] = {0, 0};  // Flash duration counter per channel
+volatile byte flashnote[2] = {255, 255}; // Note being flashed (0-11, or 255 for none)
+const byte flashduration = 80; // Flash duration in ~1ms units (~80ms)
+
 // System constants
+// Gate lengths in loop counts (208us), i.e. ~1ms to ~2.08s
 const int gatelengths[12] = {5, 50, 85, 144, 245, 416, 707, 1201, 2040, 3466, 5887, 10000};
 const int quartertone = 4; // The size of one half semitone measured in ADC counts
 const int hysteresis = 1; // Hysteresis in averaged ADC counts. Free running mode only
@@ -105,12 +111,16 @@ void updateRotation() {
 // Must be called whenver the gate length changes, either through menu or through CV
 void updateGatelength() {
   int i = state.gatelengthindex + cvgatelengthindex;
+
+  // Clamp to valid range
   if (i < 0) {
     gatelength = gatelengths[0];
-  } else if (i > 10) {
+  } else if (i >= 11) {
     gatelength = gatelengths[11];
   } else {
-    gatelength = gatelengths[i] + intmap(cvgatelengthremainder, 0, 39, 0, gatelengths[i+1] - gatelengths[i]);  
+    // Interpolate between gatelengths[i] and gatelengths[i+1] (remainder is 0-127)
+    // 32-bit math, since remainder * step size overflows an int for the longer steps
+    gatelength = gatelengths[i] + (int)(((long)cvgatelengthremainder * (gatelengths[i+1] - gatelengths[i])) >> 7);
   }
 }
 
@@ -150,9 +160,11 @@ void processChannel(byte i, int newadcval) {
 
   // Quantize the new value according to the scale or whatever quantization rules we want to define
   byte candidate;
+  byte scaleNote = 255;  // Pre-transpose note for LED flash (255 = no flash)
   bool trig = false;
   if (mode==keyboard) {
     candidate = 63 + (byte)keyboardsemitones + (byte)(12*keyboardoctaves);
+    scaleNote = mod12(keyboardsemitones);  // Flash the keyboard note
     trig = keyboardtriggered > 0;
   } else {
     // TODO: Not sure how to elegantly do the offset. Does this even work???
@@ -167,6 +179,11 @@ void processChannel(byte i, int newadcval) {
     } else { // qmequal
       candidate = quantizeEqual(newvalhystoffset);
     }
+    // Capture pre-transpose note for LED flash
+    // candidate is in semitones, use +8 offset to match scale index (same as Quantize.ino line 34)
+    // Skip invalid candidates (e.g. 255), which would overrun mod12table
+    scaleNote = (candidate < 128) ? mod12(candidate + 8) : 255;
+
     candidate += state.transposesemitones + transposesemitonesCV[i] - 1;
     if (i==1) {
       candidate += state.transposeBsemitones;
@@ -184,7 +201,11 @@ void processChannel(byte i, int newadcval) {
    
     // Update the value, rounding to the nearest semitone
     outval[i] = candidate;
-    
+
+    // Trigger LED flash feedback using pre-transpose scale note
+    flashnote[i] = scaleNote;
+    flashcounter[i] = flashduration;
+
     // Update the output value
     setDAC(i, outval[i]);
 
@@ -273,17 +294,14 @@ void processCV(byte i, int newadcval) {
 
   if (state.cvmode[i] == cvgatelength) {
     DEBUG_ON(2);
-    
-    // Scale such that 5V corresponds to 12 index steps
-    // Initially 13 is chosen as zero point, such that remainder is calculated with always positive numbers
-    int x = (newadcval + 8) / 40;
-    cvgatelengthremainder = (newadcval + 8) - (x*40);
-    // Then subtract 13 to get a signed number
-    cvgatelengthindex = x - 13;
-    
-    
-    // The remainder is used in updateGatelength to interpolate between the logarithmic steps
-    updateGatelength();    
+
+    // CV offsets the menu gate length: 128 ADC counts (~1.33V) per step, 0V (ADC ~512) = menu setting
+    // So roughly -5V..+5V gives -4..+4 steps around the menu value
+    // The remainder (0-127) is used in updateGatelength to interpolate between the logarithmic steps
+    cvgatelengthindex = (newadcval >> 7) - 4;
+    cvgatelengthremainder = newadcval & 127;
+
+    updateGatelength();
     DEBUG_OFF(2);
   } else {
   

@@ -58,7 +58,13 @@ unsigned int getDisplayState(boolean shift) {
   if (autosavecounter > 1) {
     autosavecounter --;
   }
-  
+
+  // Decrement flash counters (with interrupts off, since processChannel may restart them)
+  cli();
+  if (flashcounter[0] > 0) flashcounter[0]--;
+  if (flashcounter[1] > 0) flashcounter[1]--;
+  sei();
+
   // Precalculate all blink states (even if we might not use them)
   boolean blink = (counter & 0x100) == 0x100;
   boolean antiblink = (counter &0x1C0) == 0x000;
@@ -80,8 +86,16 @@ unsigned int getDisplayState(boolean shift) {
       } else {
         cli();
         display = rotatedscale;
+        byte note0 = (flashcounter[0] > 0) ? flashnote[0] : 255;
+        byte note1 = (flashcounter[1] > 0) ? flashnote[1] : 255;
         sei();
-        return display | 0b0000;
+
+        // Flash: the played note is always lit (it's in the scale), so turn it off for the flash duration
+        unsigned int flashmask = 0;
+        if (note0 < 12) flashmask |= (0x8000 >> note0);
+        if (note1 < 12) flashmask |= (0x8000 >> note1);
+
+        return display & ~flashmask;
       }
     case rotate:
       return BLINKDISPLAY(state.rotatesemitones, KEY_ROTATE);

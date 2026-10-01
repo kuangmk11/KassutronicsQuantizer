@@ -1,5 +1,5 @@
 /* hardware.h
- * Modified 2026-09-27: no functional changes in this file
+ * Modified 2026-09-29: MIDI output hook macros
  * This file contains hardware pinout definitions as well as 
  * some macros to access I/O pins and general purpose macros 
  */
@@ -81,6 +81,15 @@ __attribute__((always_inline)) static inline void setDAC(byte i, unsigned int va
 #else
 #define DEBUG_ON(i) {}
 #define DEBUG_OFF(i) {}
+#endif
+
+// MIDI output hooks, see Midi.ino
+#ifdef MIDI_OUT
+#define MIDI_GATE_ON(i, outval) midiGateOn(i, outval)
+#define MIDI_GATE_OFF(i) midiGateOff(i)
+#else
+#define MIDI_GATE_ON(i, outval) {}
+#define MIDI_GATE_OFF(i) {}
 #endif
 
 // **** Miscellaneous macros and functions ****

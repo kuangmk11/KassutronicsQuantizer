@@ -27,6 +27,31 @@ In the normal scale display, when a channel outputs a new note, that note's LED 
 ### Startup animation
 At power-up the note LEDs light one after another, ~2 seconds in total. This also makes it easy to confirm that new firmware was flashed.
 
+### MIDI out
+The quantized notes are sent as MIDI on the TX pin of the serial header J2 (pin 5). Channel A plays on MIDI channel 1, channel B on channel 2.
+
+- 0V is MIDI note 36 (C2). Notes above MIDI note 127 are not sent.
+- A note starts when the gate turns on and stops when it turns off. Velocity is always 100.
+- With legato on, the new note is sent before the old one is released, so mono synths slide instead of retriggering.
+
+Wiring to a MIDI jack:
+
+| J2 pin | Connect to |
+|---|---|
+| 3 (+5V) | 220Ω to DIN pin 4 (TRS type A: ring) |
+| 5 (TX) | 220Ω to DIN pin 5 (TRS type A: tip) |
+| 1 (GND) | DIN pin 2 (TRS: sleeve) |
+
+Leave DTR (pin 6) unconnected. MIDI out uses the UART, so it can't be enabled together with `DEBUGPRINT`. Disconnect the MIDI cable before uploading through J2. To turn MIDI out off, comment out `#define MIDI_OUT` in `KassutronicsQuantizer.ino`.
+
+### Channel B mirror
+Channel B can quantize channel A's input, so it works as a second voice. Press Shift+8 (quantize mode menu), then key 11 to toggle. LED 11 is lit when mirroring is on. The setting is saved.
+
+- IN B is ignored while mirroring is on. The module can't detect whether IN B is patched, so turn this on only when you want B to follow A.
+- With nothing in TRIG B, B updates together with A: same timing and gates, including repeated notes.
+- With a clock in TRIG B, B samples A's input on B's own clock.
+- B's transpose, offset and CV settings still apply, e.g. set transpose B to 7 semitones for a parallel fifth.
+
 ### Fixes
 - Gate length could overflow at long settings with CV applied, which could stop the gate from firing.
 - An invalid quantizer result could read past the end of a lookup table.

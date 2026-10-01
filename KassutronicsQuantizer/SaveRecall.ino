@@ -1,5 +1,5 @@
 /* SaveRecall.ino - EEPROM stuff
- * Modified 2026-09-27: no functional changes in this file
+ * Modified 2026-09-29: memory map comment for channel B mirror, no functional changes
  * 
  * EEPROM memory map (memory size 1k = 0x400 bytes)
  * 0x000 - 0x00F  Identifier block
@@ -24,7 +24,8 @@
  * 0x9        qmode
  * 0xA        triggerdelay
  * 0xB - 0xC  cvMode
- * 0xD - 0xF  reserved (set to 0)
+ * 0xD        mirrorB
+ * 0xE - 0xF  reserved (set to 0)
  */
 
 // Using the arduino EEPROM library

@@ -1,5 +1,6 @@
 /* UI.ino - Interface/menu structure
  * Modified 2026-09-27: note flash on the scale display, startup LED animation
+ * Modified 2026-09-29: channel B mirror toggle (key 11 in the qmode menu)
  *  
  * This file handles the user interface at high level. 
  * In particular, it dynamically calculates what LEDs 
@@ -25,6 +26,7 @@
 #define KEY_DOWN 14
 #define KEY_HOME 15
 #define KEY_SHIFT 15
+#define KEY_MIRROR 11 // In the qmode menu
 
 // Macro for making an LED blink to show what menu we are in.
 // The blink pattern changes if data == key.
@@ -146,7 +148,9 @@ unsigned int getDisplayState(boolean shift) {
     case gatelengthmenu:
       return BLINKDISPLAY(state.gatelengthindex, KEY_GATELENGTH);
     case qmodemenu:
-      return BLINKDISPLAY(state.qmode, KEY_QM);
+      display = BLINKDISPLAY(state.qmode, KEY_QM);
+      if (state.mirrorB) display |= (0x8000 >> KEY_MIRROR);
+      return display;
     case cvA:
       data = (state.cvmode[0]==cvoff) ? KEY_CVA : state.cvmode[0];
       return BLINKDISPLAY(data, KEY_CVA);
@@ -372,6 +376,11 @@ void keyDownEvent(byte key, boolean shift) {
       if (key<=MAX_Q_MODE) {
         cli();
         state.qmode = (QMode)key;
+        sei();
+        autosavecounter = autosavetime;
+      } else if (key==KEY_MIRROR) {
+        cli();
+        state.mirrorB = !state.mirrorB;
         sei();
         autosavecounter = autosavetime;
       } else if (key==KEY_HOME) {

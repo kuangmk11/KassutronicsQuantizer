@@ -1,5 +1,6 @@
 /* Core.ino - I/O processing etc
  * Modified 2026-09-27: CV gate length now offsets the menu setting, note flash state
+ * Modified 2026-09-29: MIDI note output hooks at the gate on/off points, channel B mirror
  *  
  * This file mainly contains the processChannel and processCV functions,
  * which process the ADC data for the channel inputs and CV inputs, respectively,
@@ -63,10 +64,11 @@ struct PersistentState {
   QMode qmode;
   byte triggerdelay;
   CVMode cvmode[2];
-  byte reserved[3];
+  bool mirrorB;
+  byte reserved[2];
 };
 volatile PersistentState state = {
-  0b1010110101010000, 0, 0, 0, 0, 0, 0, false, qmnearest, 0, {cvoff, cvoff}, {0,0,0}
+  0b1010110101010000, 0, 0, 0, 0, 0, 0, false, qmnearest, 0, {cvoff, cvoff}, false, {0,0}
 };
 
 // Non-persistent global state variables
@@ -145,6 +147,17 @@ void processChannel(byte i, int newadcval) {
   static bool freerunning[2] = {true, true};
   static int triggercounter[2] = {0, 0};
   static byte triggerdelay[2] = {0, 0};
+
+  // Channel B mirror: B quantizes channel A's input (toggled in the qmode menu)
+  static int mirrorhyst = 0;     // A's input (with hysteresis) at its last update
+  static int mirrorlive = 0;     // A's latest input
+  static bool mirrortrig = false; // A updated since B last ran
+  bool mirror = (i==1) && state.mirrorB;
+  // With TRIG B unpatched, B updates together with A. Otherwise B samples A's input on its own trigger.
+  bool follow = mirror && freerunning[1];
+  if (i==0) {
+    mirrorlive = newadcval;
+  }
   
   // Scale the current output value to ADC units for scaling
   int oldval = outval[i] << 3;
@@ -157,6 +170,11 @@ void processChannel(byte i, int newadcval) {
     } else if (newadcval < oldval) {
       newvalhyst += (hysteresis - 1);
     }
+  }
+  if (follow) {
+    newvalhyst = mirrorhyst;
+  } else if (mirror) {
+    newvalhyst = mirrorlive;
   }
 
   // Quantize the new value according to the scale or whatever quantization rules we want to define
@@ -190,12 +208,21 @@ void processChannel(byte i, int newadcval) {
       candidate += state.transposeBsemitones;
     }
     if (candidate < 128) {
-      trig = (freerunning[i] && (candidate != outval[i])) || (triggerdelay[i] == 1);
+      if (follow) {
+        // Also update on B's own changes (e.g. transpose B) when A is freerunning
+        trig = mirrortrig || (freerunning[0] && (candidate != outval[i]));
+      } else {
+        trig = (freerunning[i] && (candidate != outval[i])) || (triggerdelay[i] == 1);
+      }
     } else if (triggerdelay[i] == 1) {
       triggerdelay[i] = 0;
     }
   }
   
+  if (i==1) {
+    mirrortrig = false;
+  }
+
   // Decide if we should update the value
   // Note: we ignore any value outside the DAC range
   if (trig) {
@@ -213,6 +240,7 @@ void processChannel(byte i, int newadcval) {
     // If legato is disabled, we turn off the gate now; it will be turned on again after gatedelay.
     if (not state.gatelegato) {
       GATE_OFF(i);
+      MIDI_GATE_OFF(i);
     }
 
     // Start a delay counter for the gate output, such that the gate only starts once the DAC filter has settled
@@ -220,6 +248,12 @@ void processChannel(byte i, int newadcval) {
 
     // Reset trigger flag
     triggerdelay[i] = 0;
+
+    // Remember what A quantized, for channel B mirror
+    if (i==0) {
+      mirrorhyst = newvalhyst;
+      mirrortrig = true;
+    }
 
     // Decrement keyboard trigger flag
     keyboardtriggered--;
@@ -231,14 +265,17 @@ void processChannel(byte i, int newadcval) {
      *  gatedelay, and returned to the original value before any gate has been output. 
      *  This happens in particular with a noisy input signal.
      *  In this case we suppress the gate output, making the quantizer more resilient to input noise.
+     *  When B follows A (mirror), B's gate is suppressed only when A's would be.
      */
-    if (!freerunning[i] || (outval[i] != lastgateoutval[i])) {
+    if (!(follow ? freerunning[0] : freerunning[i]) || (outval[i] != lastgateoutval[i])) {
       GATE_ON(i);
+      MIDI_GATE_ON(i, outval[i]);
       lastgateoutval[i] = outval[i];
     }
   }
   if (gatecounter[i] == gatelength) {
     GATE_OFF(i);
+    MIDI_GATE_OFF(i);
   }
   if (gatecounter[i] <= gatelength) {
     gatecounter[i] += 1;

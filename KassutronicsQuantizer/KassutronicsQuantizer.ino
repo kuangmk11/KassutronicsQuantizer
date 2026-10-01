@@ -1,4 +1,5 @@
 // Modified 2026-09-27 (fork): CV gate length, note flash, startup animation. See Core.ino/UI.ino
+// Modified 2026-09-29 (fork): MIDI note output on the serial header. See Midi.ino
 
 // **** Debug functionality ****
 /* SLOW slows down the ADC by a factor 2, giving more time for core processing. */
@@ -12,6 +13,10 @@
 /* DEBUGPRINT enables the serial port for debugging. This kind of works if you occasionally
   print something, but breaks if you try to send any significant amount of data. */
 //#define DEBUGPRINT
+
+/* MIDI_OUT sends the quantized notes as MIDI on the UART TX pin (serial header J2 pin 5).
+   Channel A plays on MIDI channel 1, channel B on channel 2. Cannot be used together with DEBUGPRINT. */
+#define MIDI_OUT
 
 // Set to true to reset the EEPROM to default values on startup
 #define EE_RESET false
@@ -32,6 +37,9 @@ void setup() {
   setupPWM();
   setupADC();
   setupGPIO();
+  #ifdef MIDI_OUT
+  setupMidi();
+  #endif
   
   // Bit of delay after setup to allow the ADC to be properly set (probably not needed)
   delay(10);
